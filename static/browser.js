@@ -1,6 +1,39 @@
-export async function initBrowser(credentials, onSelectionChanged) {
-    const headers = { "Authorization": `Bearer ${credentials.access_token}` };
-    const { data: hubs } = await fetch("/hubs", { headers }).then(resp => resp.json());
+class DataManagementClient {
+    constructor(authProvider, host = "https://developer.api.autodesk.com") {
+        this.authProvider = authProvider;
+        this.host = host;
+    }
+
+    async #get(endpoint) {
+        const credentials = await this.authProvider.getCredentials();
+        const headers = { "Authorization": `Bearer ${credentials.access_token}` };
+        const response = await fetch(`${this.host}/${endpoint}`, { headers });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${endpoint}: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+    }
+
+    async getHubs() {
+        return this.#get("project/v1/hubs");
+    }
+
+    async getProjects(hubId) {
+        return this.#get(`project/v1/hubs/${hubId}/projects`);
+    }
+
+    async getProjectFolders(hubId, projectId) {
+        return this.#get(`project/v1/hubs/${hubId}/projects/${projectId}/topFolders`);
+    }
+
+    async getFolderContents(projectId, folderId) {
+        return this.#get(`data/v1/projects/${projectId}/folders/${folderId}/contents`);
+    }
+}
+
+export async function initBrowser(authProvider, onSelectionChanged) {
+    const dataManagementClient = new DataManagementClient(authProvider);
+    const { data: hubs } = await dataManagementClient.getHubs();
     const $tree = document.querySelector("#browser > sl-tree");
     for (const hub of hubs) {
         $tree.append(createTreeItem(`hub|${hub.id}`, hub.attributes.name, "cloud", true));
@@ -25,17 +58,17 @@ export async function initBrowser(credentials, onSelectionChanged) {
                 const tokens = item.id.split("|");
                 switch (tokens[0]) {
                     case "hub": {
-                        const { data: projects } = await fetch(`/hubs/${tokens[1]}/projects`, { headers }).then(resp => resp.json());
+                        const { data: projects } = await dataManagementClient.getProjects(tokens[1]);
                         item.append(...projects.map(project => createTreeItem(`prj|${tokens[1]}|${project.id}`, project.attributes.name, "building", true)));
                         break;
                     }
                     case "prj": {
-                        const { data: folders } = await fetch(`/hubs/${tokens[1]}/projects/${tokens[2]}/contents`, { headers }).then(resp => resp.json());
+                        const { data: folders } = await dataManagementClient.getProjectFolders(tokens[1], tokens[2]);
                         item.append(...folders.map(folder => createTreeItem(`fld|${tokens[1]}|${tokens[2]}|${folder.id}`, folder.attributes.displayName, "folder", true)));
                         break;
                     }
                     case "fld": {
-                        const { data: contents, included } = await fetch(`/hubs/${tokens[1]}/projects/${tokens[2]}/contents?folder_id=${tokens[3]}`, { headers }).then(resp => resp.json());
+                        const { data: contents, included } = await dataManagementClient.getFolderContents(tokens[2], tokens[3]);
                         const folders = contents.filter(entry => entry.type === "folders");
                         item.append(...folders.map(folder => createTreeItem(`fld|${tokens[1]}|${tokens[2]}|${folder.id}`, folder.attributes.displayName, "folder", true)));
                         const designs = contents.filter(entry => entry.type === "items");

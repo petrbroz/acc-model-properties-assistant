@@ -1,6 +1,6 @@
 # ACC Model Properties Assistant
 
-Experimental chatbot for querying design data in [Autodesk Construction Cloud](https://construction.autodesk.com/) using custom [LangChain](https://www.langchain.com) agents and [Autodesk Platform Services](https://aps.autodesk.com) (specifically with [ACC Model Properties API](https://aps.autodesk.com/en/docs/acc/v1/tutorials/model-properties/)).
+Experimental chatbot for querying design data in [Autodesk Construction Cloud](https://construction.autodesk.com/) using custom [LangChain](https://www.langchain.com) agents and [Autodesk Platform Services](https://aps.autodesk.com) ([ACC Model Properties API](https://aps.autodesk.com/en/docs/acc/v1/tutorials/model-properties/)).
 
 ![Thumbnail](thumbnail.png)
 
@@ -8,7 +8,7 @@ Experimental chatbot for querying design data in [Autodesk Construction Cloud](h
 
 The application implements a [LangGraph agent](https://python.langchain.com/docs/how_to/migrate_agent/) with a couple of custom tools that let it talk to the [ACC Model Properties API](https://aps.autodesk.com/en/docs/acc/v1/tutorials/model-properties/), and process JSON responses using [jq](https://jqlang.org/). The agent is also provided with a short guide explaining the syntax of the Model Properties Query Language (see [MPQL.md](./MPQL.md)).
 
-After logging in an selecting a design, the user can start sending prompts to the agent. The agent will then execute different types of tasks based on the user's prompt, for example:
+After logging in an selecting a design, the user can start sending prompts to the agent. The agent will execute different types of tasks based on the user's prompt, for example:
 
 - Create a new index using the Model Properties API
 - Retrieve list of available index fields
@@ -23,7 +23,7 @@ Login with your Autodesk credentials, select one of your design files in ACC, an
 
 > what is the smallest and the largest volume of a wall?
 
-> list the IDs of walls with volume larger than 1000.0 cubic meters.
+> list the IDs of walls with volume larger than 1000.0 cubic meters
 
 ## Development
 

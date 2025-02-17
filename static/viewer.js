@@ -1,7 +1,11 @@
-export function initViewer(credentials) {
-    const $container = document.querySelector("#preview");
+export function initViewer(authProvider) {
+    async function getAccessToken(callback) {
+        const credentials = await authProvider.getCredentials();
+        callback(credentials.access_token, Math.round((credentials.expires_at - Date.now()) / 1000));
+    }
     return new Promise(function (resolve, reject) {
-        Autodesk.Viewing.Initializer({ env: "AutodeskProduction2", api: "streamingV2", accessToken: credentials.access_token }, function () {
+        Autodesk.Viewing.Initializer({ env: "AutodeskProduction2", api: "streamingV2", getAccessToken }, function () {
+            const $container = document.querySelector("#preview");
             const options = {
                 extensions: ["Autodesk.DocumentBrowser"]
             };

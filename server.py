@@ -1,13 +1,15 @@
 import os
+import base64
 import uvicorn
 from datetime import datetime
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from langchain_openai import ChatOpenAI
-from aps import DataManagementClient
 from agent import create_agent
 
+model = ChatOpenAI(model="gpt-4o")
+agents = {} # Cache agents by URN
 app = FastAPI()
 
 def check_access(request: Request):
@@ -16,27 +18,6 @@ def check_access(request: Request):
         raise HTTPException(status_code=401)
     return authorization.replace("Bearer ", "")
 
-@app.get("/hubs")
-async def get_hubs(access_token: str = Depends(check_access)) -> dict:
-    data_management_client = DataManagementClient(access_token)
-    return await data_management_client.get_hubs()
-
-@app.get("/hubs/{hub_id}/projects")
-async def get_projects(hub_id: str, access_token: str = Depends(check_access)) -> dict:
-    data_management_client = DataManagementClient(access_token)
-    return await data_management_client.get_projects(hub_id)
-
-@app.get("/hubs/{hub_id}/projects/{project_id}/contents")
-async def get_folder_contents(hub_id: str, project_id: str, folder_id: str | None = None, access_token: str = Depends(check_access)) -> dict:
-    data_management_client = DataManagementClient(access_token)
-    if folder_id is None:
-        return await data_management_client.get_project_folders(hub_id, project_id)
-    else:
-        return await data_management_client.get_folder_contents(project_id, folder_id)
-
-model = ChatOpenAI(model="gpt-4o")
-agents = {} # Cache agents by URN
-
 class PromptPayload(BaseModel):
     project_id: str
     version_id: str
@@ -44,10 +25,7 @@ class PromptPayload(BaseModel):
 
 @app.post("/chatbot/prompt")
 async def chatbot_prompt(payload: PromptPayload, access_token: str = Depends(check_access)) -> dict:
-    data_management_client = DataManagementClient(access_token)
-    response = await data_management_client.get_version(payload.project_id, payload.version_id)
-    version = response["data"]
-    urn = version["relationships"]["derivatives"]["data"]["id"]
+    urn = base64.b64encode(payload.version_id.encode()).decode().replace("/", "_").replace("=", "")
     cache_folder = f"__cache__/{urn}"
     os.makedirs(cache_folder, exist_ok=True)
     if urn not in agents:

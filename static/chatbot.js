@@ -1,4 +1,4 @@
-export function initChatbot(credentials, projectId, versionId) {
+export function initChatbot(authProvider, projectId, versionId) {
     const $chatbot = document.querySelector("#chatbot");
     $chatbot.innerHTML = `
         <div style="width: 100%; height: 100%;">
@@ -38,7 +38,7 @@ export function initChatbot(credentials, projectId, versionId) {
         $button.innerText = "Thinking...";
         $button.setAttribute("disabled", "true");
         try {
-            const answer = await submitPrompt(prompt, projectId, versionId, credentials);
+            const answer = await submitPrompt(prompt, projectId, versionId, authProvider);
             addChatMessage("Assistant", answer);
         } catch (err) {
             console.error(err);
@@ -62,7 +62,8 @@ export function initChatbot(credentials, projectId, versionId) {
     }
 }
 
-async function submitPrompt(prompt, projectId, versionId, credentials) {
+async function submitPrompt(prompt, projectId, versionId, authProvider) {
+    const credentials = await authProvider.getCredentials();
     const resp = await fetch(`/chatbot/prompt`, {
         method: "post",
         headers: {

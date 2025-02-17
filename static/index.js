@@ -1,18 +1,18 @@
-import { authenticate, login, logout } from "./auth.js";
+import { initAuth, login, logout } from "./auth.js";
 import { initBrowser } from "./browser.js";
 import { initViewer, loadModel } from "./viewer.js";
 import { initChatbot } from "./chatbot.js";
 
-const credentials = await authenticate();
+const authProvider = await initAuth();
 const $login = document.querySelector("#login");
 $login.style.visibility = "visible";
-if (credentials) {
+if (authProvider) {
     $login.innerText = "Logout";
     $login.onclick = () => logout();
-    const viewer = await initViewer(credentials);
-    await initBrowser(credentials, (el) => {
+    const viewer = await initViewer(authProvider);
+    await initBrowser(authProvider, (el) => {
         loadModel(viewer, el.urn);
-        initChatbot(credentials, el.projectId, el.versionId);
+        initChatbot(authProvider, el.projectId, el.versionId);
         document.getElementById("chatbot").addEventListener("click", function ({ target }) {
             if (target.dataset.dbids) {
                 const dbids = target.dataset.dbids.split(",").map(e => parseInt(e));

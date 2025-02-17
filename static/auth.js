@@ -1,6 +1,28 @@
 import { APS_CLIENT_ID, APS_CALLBACK_URL } from "./config.js";
 
-export async function authenticate() {
+class LocalStorageAuthenticationProvider {
+    async getCredentials() {
+        let credentials = {
+            access_token: localStorage.getItem("access_token"),
+            refresh_token: localStorage.getItem("refresh_token"),
+            expires_at: parseInt(localStorage.getItem("expires_at"))
+        };
+        if (credentials.expires_at < Date.now()) {
+            credentials = await refreshToken(APS_CLIENT_ID, credentials.refresh_token);
+            localStorage.setItem("access_token", credentials.access_token);
+            localStorage.setItem("refresh_token", credentials.refresh_token);
+            localStorage.setItem("expires_at", credentials.expires_at);
+        }
+        return credentials;
+    }
+}
+
+/**
+ * Initializes the authentication provider.
+ * @async
+ * @returns {Promise<LocalStorageAuthenticationProvider>}
+ */
+export async function initAuth() {
     const codeVerifier = localStorage.getItem("code_verifier");
     localStorage.removeItem("code_verifier");
     const params = new URLSearchParams(location.search);
@@ -14,18 +36,7 @@ export async function authenticate() {
     } else if (params.has("error")) { // User has been redirected back from Autodesk with an error
         throw new Error(params.get("error") + ": " + params.get("error_description"));
     } else if (localStorage.getItem("access_token")) { // There is an existing access token in local storage
-        let credentials = {
-            access_token: localStorage.getItem("access_token"),
-            refresh_token: localStorage.getItem("refresh_token"),
-            expires_at: parseInt(localStorage.getItem("expires_at"))
-        };
-        if (credentials.expires_at < Date.now()) { // Access token has expired, refresh it
-            credentials = await refreshToken(APS_CLIENT_ID, credentials.refresh_token);
-            localStorage.setItem("access_token", credentials.access_token);
-            localStorage.setItem("refresh_token", credentials.refresh_token);
-            localStorage.setItem("expires_at", credentials.expires_at);
-        }
-        return credentials;
+        return new LocalStorageAuthenticationProvider();
     }
     return null;
 }
