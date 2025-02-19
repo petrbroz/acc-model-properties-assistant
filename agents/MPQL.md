@@ -1,12 +1,12 @@
 # Model Properties Query Language Guide
 
-The **Model Properties Query Language (MPQL)** is a JSON-based query syntax for filtering and retrieving design element properties from design files hosted in **Autodesk Construction Cloud** using the **Autodesk Construction Cloud Model Properties API**. This guide explains how to construct **valid MPQL queries** for filtering model properties and selecting specific columns.
+The **Model Properties Query Language (MPQL)** is a JSON-based query syntax for filtering and retrieving design element properties from a **Model Properties index**. The index is generated for design files hosted in **Autodesk Construction Cloud** using the **ACC Model Properties API** (part of **Autodesk Platform Services**). This guide explains how to construct valid MPQL queries.
 
 ## Query Structure
 
 A valid MPQL query consists of:
 
-- A `query` object defining the conditions to match
+- A `query` object defining custom filter conditions; only elements matching these filters will be returned
 - An optional `columns` object specifying which properties to retrieve
 
 ### Example Query
@@ -17,22 +17,25 @@ A valid MPQL query consists of:
     "$eq": ["s.props.p5678efgh", "'Walls'"]
   },
   "columns": {
+    "s.svf2Id": true,
     "Name": "s.props.p1234abcd",
     "Width": "s.props.p2233ffee"
   }
 }
-```  
+```
 
 ## Property Paths
 
-Properties in queries and column selections are specified using **property paths** such as `s.props.<property key>` where **property key** is a hexadecimal value prefixed with "p", for example, "p5678efgh". The mapping from **property names** to **property keys** is available in the index built by the **Autodesk Construction Cloud Model Properties API**. There are also several **metadata properties** such as:
+Properties must always be specified using **property paths** such as `s.props.<key>` where the key is a hexadecimal value prefixed with `p`, for example, `p5678efgh`. The list of all available properties and their keys can be retrieved from the Model Properties index.
+
+There are also several **metadata properties** such as:
 
 - `s.svf2Id` - unique ID of the design element
 - `s.views` - number of views in which the element is visible
 
 ## Conditions
 
-MPQL supports various operators to filter model properties:
+MPQL supports various operators to filter elements based on their properties:
 
 | Operator   | Description                           | Example  |
 |------------|---------------------------------------|----------|
