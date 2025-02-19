@@ -19,9 +19,9 @@ def _load_content(relative_path: str) -> str:
     with open(os.path.join(os.path.dirname(__file__), relative_path)) as f:
         return f.read()
 
-async def _create_index(project_id: str, design_id: str, access_token: str, cache_urn_dir: str):
+async def _create_index(project_id: str, design_id: str, access_token: str, cache_dir: str):
     client = ModelPropertiesClient(access_token)
-    index_path = os.path.join(cache_urn_dir, "index.json")
+    index_path = os.path.join(cache_dir, "index.json")
     if not os.path.exists(index_path):
         payload = {"versions": [{ "versionUrn": design_id }]}
         result = await client.create_indexes(project_id, payload)
@@ -37,9 +37,9 @@ async def _create_index(project_id: str, design_id: str, access_token: str, cach
             raise Exception(f"Index creation failed with errors: {index["errors"]}")
         return index["indexId"]
 
-async def _list_index_properties(project_id: str, index_id: str, access_token: str, cache_urn_dir: str):
+async def _list_index_properties(project_id: str, index_id: str, access_token: str, cache_dir: str):
     client = ModelPropertiesClient(access_token)
-    fields_path = os.path.join(cache_urn_dir, "fields.json")
+    fields_path = os.path.join(cache_dir, "fields.json")
     if not os.path.exists(fields_path):
         fields = await client.get_index_fields(project_id, index_id)
         categories = {}
@@ -56,7 +56,7 @@ async def _list_index_properties(project_id: str, index_id: str, access_token: s
     with open(fields_path) as f:
         return json.load(f)
 
-async def _query_index(project_id: str, index_id: str, query_str: str, access_token: str, cache_urn_dir: str):
+async def _query_index(project_id: str, index_id: str, query_str: str, access_token: str, cache_dir: str):
     client = ModelPropertiesClient(access_token)
     payload = json.loads(query_str)
     query = await client.create_query(project_id, index_id, payload)
@@ -73,20 +73,20 @@ async def _query_index(project_id: str, index_id: str, query_str: str, access_to
         raise Exception(f"Query failed with errors: {query["errors"]}")
 
 class ModelPropertiesAgent:
-    def __init__(self, project_id: str, version_id: str, access_token: str, cache_urn_dir: str):
+    def __init__(self, project_id: str, version_id: str, access_token: str, cache_dir: str):
         @tool
         async def create_index(
             design_id: Annotated[str, "The ID of the input design file hosted in Autodesk Construction Cloud."]
         ) -> str:
             """Builds a **Model Properties index** for a given design ID, including all available properties, and property values for individual design elements. Returns the ID of the created index."""
-            return await _create_index(project_id, design_id, access_token, cache_urn_dir)
+            return await _create_index(project_id, design_id, access_token, cache_dir)
 
         @tool
         async def list_index_properties(
             index_id: Annotated[str, "The ID of the **Model Properties index** to list the available properties for."]
         ) -> dict:
             """Lists available properties for a **Model Properties index** of given ID. Returns a JSON with property categories, names, and keys."""
-            return await _list_index_properties(project_id, index_id, access_token, cache_urn_dir)
+            return await _list_index_properties(project_id, index_id, access_token, cache_dir)
 
         @tool
         async def query_index(
@@ -94,7 +94,7 @@ class ModelPropertiesAgent:
             query_str: Annotated[str, "The Model Property Service Query Language query."],
         ) -> list[dict]:
             """Queries a **Model Properties index** of the given ID with a Model Property Service Query Language query. Returns a JSON list with properties of matching design elements."""
-            return await _query_index(project_id, index_id, query_str, access_token, cache_urn_dir)
+            return await _query_index(project_id, index_id, query_str, access_token, cache_dir)
 
         @tool
         def execute_jq_query(
@@ -113,7 +113,7 @@ class ModelPropertiesAgent:
         prompt_template = ChatPromptTemplate.from_messages([("system", system_prompts), ("placeholder", "{messages}")])
         self._agent = create_react_agent(_llm, tools, prompt=prompt_template, checkpointer=MemorySaver())
         self._config = {"configurable": {"thread_id": version_id}}
-        self._logs_path = os.path.join(cache_urn_dir, "logs.txt")
+        self._logs_path = os.path.join(cache_dir, "logs.txt")
 
     def _log(self, message: str):
         with open(self._logs_path, "a") as log:

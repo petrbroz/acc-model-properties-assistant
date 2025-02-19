@@ -25,7 +25,7 @@ class PromptPayload(BaseModel):
 @app.post("/chatbot/prompt")
 async def chatbot_prompt(payload: PromptPayload, access_token: str = Depends(_check_access)) -> dict:
     urn = base64.b64encode(payload.version_id.encode()).decode().replace("/", "_").replace("=", "")
-    cache_urn_dir = f"__cache__/{urn}"
+    cache_urn_dir = os.path.join(cache_dir, urn)
     os.makedirs(cache_urn_dir, exist_ok=True)
     if not urn in agents:
         agents[urn] = ModelPropertiesAgent(payload.project_id, payload.version_id, access_token, cache_urn_dir)

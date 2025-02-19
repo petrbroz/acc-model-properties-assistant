@@ -1,1 +1,1 @@
-from .model_props import ModelPropertiesAgent
+from .model_props_agent import ModelPropertiesAgent
