@@ -123,9 +123,12 @@ class ModelPropertiesAgent:
         self._log(f"User: {prompt}")
         responses = []
         async for step in self._agent.astream({"messages": [("human", prompt)]}, self._config, stream_mode="updates"):
-            self._log(f"Assistant: {step}")
             if "agent" in step:
                 for message in step["agent"]["messages"]:
+                    self._log(message.pretty_repr())
                     if isinstance(message.content, str) and message.content:
                         responses.append(message.content)
+            if "tools" in step:
+                for message in step["tools"]["messages"]:
+                    self._log(message.pretty_repr())
         return responses
